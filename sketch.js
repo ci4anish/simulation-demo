@@ -1,12 +1,13 @@
 let debug = true;
-let lake, field, leader, camp, predators = [];
+let lake, field, leader, camp, predatorCamp, predators = [];
 let followers = [];
 
 function setup() {
     createCanvas(window.innerWidth, window.innerHeight);
-    lake = new Lake();
-    camp = new Camp();
-    field = new Field();
+    lake = new Lake(createVector(900, 500));
+    camp = new Camp(createVector(100, 100));
+    predatorCamp = new Camp(createVector(window.innerWidth - 100, window.innerHeight - 100));
+    field = new Field(createVector(240, 660));
     leader = new Leader(camp.getCenter().x, camp.getCenter().y, 1.5, 0.03);
 
     leader.rememberObject(camp, ObjectTypes.CAMP);
@@ -26,12 +27,13 @@ function draw() {
     lake.display();
     field.display();
     camp.display();
+    predatorCamp.display();
     leader.applyBehavior(followers.filter(f => f.alive), predators);
     leader.contain(window.innerWidth, window.innerHeight);
     leader.run();
 
     followers.forEach((f) => {
-        if(f.alive) {
+        if (f.alive) {
             f.applyBehavior(leader, followers.filter(f => f.alive), predators);
             f.contain(window.innerWidth, window.innerHeight);
             f.run();
@@ -54,6 +56,8 @@ function keyPressed() {
 }
 
 function mousePressed() {
-    predators.push(new Predator(mouseX, mouseY, 1.3, 0.2));
+    const p = new Predator(mouseX, mouseY, 1.3, 0.2)
+    predators.push(p);
+    p.rememberObject(predatorCamp, ObjectTypes.CAMP);
 
 }

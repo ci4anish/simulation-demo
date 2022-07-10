@@ -25,7 +25,57 @@ class Mover {
         this.target.add(this.wanderRadius, 0);
 
         this.visibilityRadius = 150;
+
+        this.initMemory();
     }
+
+    initMemory() {
+        this.memorizedObjects = {};
+        for (let key in ObjectTypes) {
+            this.memorizedObjects[key] = [];
+        }
+    }
+
+    searchObject(type) {
+        //todo do not calculate distances and create path on each iteration. Rather do it when making the decision
+        if (this.memorizedObjects[type].length === 0) {
+            let w = this.wander();
+            this.applyForce(w);
+            return;
+        }
+
+        const fromPos = this.currentNavigationObject.getCenter();
+        const closest = this.getClosestObject(fromPos, this.memorizedObjects[type]);
+
+        const path = new Path(100);
+        path.addPoint(fromPos.x, fromPos.y);
+        path.addPoint(closest.getCenter().x, closest.getCenter().y);
+
+        if (debug) {
+            path.display();
+        }
+
+        // Follow path force
+        let f = this.follow(path);
+        let w = this.wander();
+        let s = this.seek(closest.pos);
+        // Arbitrary weighting
+        s.div(100);
+        // f.mult(2);
+        // Accumulate in acceleration
+
+        return w.add(f).add(s);
+    }
+
+
+    rememberObject(object, type) {
+        this.memorizedObjects[type].push(object);
+    }
+
+    setCurrentNavigationObject(object) {
+        this.currentNavigationObject = object;
+    }
+
 
     kill() {
         this.alive = false;
@@ -388,7 +438,6 @@ class Leader extends Mover {
     constructor(x, y, ms, mf) {
         super(x, y, ms, mf);
 
-        this.initMemory();
         this.initDesires();
     }
 
@@ -430,7 +479,10 @@ class Leader extends Mover {
                     this.drink();
                 }
             } else {
-                this.searchObject(ObjectTypes.WATER, followers);
+                let s = this.searchObject(ObjectTypes.WATER);
+                let l = this.lead(followers);
+                this.applyForce(s);
+                this.applyForce(l);
             }
         } else if (this.hungre > 0) {
             const closest = this.getClosestObject(this.pos, this.memorizedObjects[ObjectTypes.FOOD]);
@@ -444,7 +496,10 @@ class Leader extends Mover {
                     this.feed();
                 }
             } else {
-                this.searchObject(ObjectTypes.FOOD, followers);
+                let s = this.searchObject(ObjectTypes.FOOD);
+                let l = this.lead(followers);
+                this.applyForce(s);
+                this.applyForce(l);
             }
         } else {
             const closest = this.getClosestObject(this.pos, this.memorizedObjects[ObjectTypes.CAMP]);
@@ -458,7 +513,10 @@ class Leader extends Mover {
                     this.rest();
                 }
             } else {
-                this.searchObject(ObjectTypes.CAMP, followers);
+                let s = this.searchObject(ObjectTypes.CAMP);
+                let l = this.lead(followers);
+                this.applyForce(s);
+                this.applyForce(l);
             }
         }
     }
@@ -484,14 +542,6 @@ class Leader extends Mover {
         return (d < this.r + other.radius);
     }
 
-    rememberObject(object, type) {
-        this.memorizedObjects[type].push(object);
-    }
-
-    setCurrentNavigationObject(object) {
-        this.currentNavigationObject = object;
-    }
-
     feed() {
         if (this.hungre > 0) {
             this.hungre -= 0.05;
@@ -512,50 +562,6 @@ class Leader extends Mover {
         this.hungre = 70;
         this.thirst = 50;
     }
-
-    initMemory() {
-        this.memorizedObjects = {};
-        for (let key in ObjectTypes) {
-            this.memorizedObjects[key] = [];
-        }
-    }
-
-    searchObject(type, followers) {
-        //todo do not calculate distances and create path on each iteration. Rather do it when making the decision
-        if (this.memorizedObjects[type].length === 0) {
-            let w = this.wander();
-            this.applyForce(w);
-            return;
-        }
-
-        const fromPos = this.currentNavigationObject.getCenter();
-        const closest = this.getClosestObject(fromPos, this.memorizedObjects[type]);
-
-        const path = new Path(100);
-        path.addPoint(fromPos.x, fromPos.y);
-        path.addPoint(closest.getCenter().x, closest.getCenter().y);
-
-        if (debug) {
-            path.display();
-        }
-
-        // Follow path force
-        let f = this.follow(path);
-        let w = this.wander();
-        let s = this.seek(closest.pos);
-        // Arbitrary weighting
-        s.div(100);
-        // f.mult(2);
-        // Accumulate in acceleration
-
-        this.applyForce(f);
-        this.applyForce(w);
-        this.applyForce(s);
-
-        let l = this.lead(followers);
-        this.applyForce(l);
-    }
-
 }
 
 class Predator extends Mover {
@@ -589,9 +595,11 @@ class Predator extends Mover {
 
     applyBehavior(entities) {
         if (this.hungre < 20) {
-            let w = this.wander();
-            w.mult(3);
-            this.applyForce(w);
+            if (!this.currentNavigationObject) {
+                this.setCurrentNavigationObject(new NavigationObject(this.pos));
+            }
+            let s = this.searchObject(ObjectTypes.CAMP);
+            this.applyForce(s);
             return;
         }
 

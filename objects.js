@@ -1,6 +1,24 @@
+class NavigationObject {
+    constructor(pos){
+        this.pos = pos;
+        this.radius = 2;
+    }
+
+    display(){
+        strokeWeight(2);
+        stroke(0);
+        fill(255, 255, 255);
+        ellipse(this.pos.x, this.pos.y, this.radius * 2, this.radius * 2);
+    }
+
+    getCenter(){
+        return this.pos.copy();
+    }
+}
+
 class Camp {
-    constructor(){
-        this.pos = createVector(100, 100);
+    constructor(pos){
+        this.pos = pos;
         this.radius = 20;
     }
 
@@ -17,8 +35,8 @@ class Camp {
 }
 
 class Lake {
-    constructor(){
-        this.pos = createVector(900, 500);
+    constructor(pos){
+        this.pos = pos;
         this.radius = 100;
     }
 
@@ -35,8 +53,8 @@ class Lake {
 }
 
 class Field {
-    constructor(){
-        this.pos = createVector(240, 660);
+    constructor(pos){
+        this.pos = pos;
         this.radius = 75;
     }
 
