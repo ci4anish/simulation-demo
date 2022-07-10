@@ -568,7 +568,7 @@ class Predator extends Mover {
     constructor(x, y, ms, mf) {
         super(x, y, ms, mf);
         this.visibilityRadius = 200;
-        this.velocity = p5.Vector.random2D();
+        this.velocity = createVector(this.maxspeed, 0);
         this.hungre = 80;
     }
 
@@ -627,7 +627,7 @@ class Predator extends Mover {
             this.feed();
             let a = this.arrive(closestDead.pos);
             this.applyForce(a);
-        } else if (p5.Vector.dist(this.pos, closestAlive.getCenter()) <= this.r) {
+        } else if (p5.Vector.dist(this.pos, closestAlive.getCenter()) <= this.r * 2) {
             closestAlive.kill();
         } else if (p5.Vector.dist(this.pos, closestAlive.getCenter()) <= this.visibilityRadius) {
             const p = this.pursue(closestAlive);
