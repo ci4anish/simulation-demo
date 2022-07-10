@@ -37,7 +37,7 @@ function draw() {
     });
 
     predators.forEach(predator => {
-        predator.applyBehavior(followers);
+        predator.applyBehavior([leader, ...followers]);
         predator.contain(window.innerWidth, window.innerHeight);
         predator.run();
     });

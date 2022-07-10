@@ -22,6 +22,12 @@ class Mover {
 
         this.target = this.wanderPoint.copy();
         this.target.add(this.wanderRadius, 0);
+
+        this.visibilityRadius = 150;
+    }
+
+    getCenter() {
+        return createVector(this.pos.x - this.r, this.pos.y - this.r);
     }
 
     applyForce(force) {
@@ -42,22 +48,6 @@ class Mover {
         this.pos.add(this.velocity);
         // Reset accelertion to 0 each cycle
         this.acceleration.mult(0);
-    }
-
-    render() {
-        fill(255);
-        strokeWeight(2);
-        stroke(0);
-        push();
-        translate(this.pos.x, this.pos.y);
-        if (debug) {
-            fill(0, 0, 0, 0);
-            ellipse(0, 0, this.visibilityRadius * 2, this.visibilityRadius * 2);
-            fill(255);
-        }
-        rotate(this.velocity.heading());
-        triangle(-this.r, -this.r / 2, -this.r, this.r / 2, this.r, 0);
-        pop();
     }
 
     wander() {
@@ -300,9 +290,44 @@ class Mover {
     flee(target) {
         return this.seek(target).mult(-1);
     }
+
+    getClosestObject(fromPos, objects) {
+        // search for the closest object containing food
+        let closest = objects[0];
+        let distanceToClosest = p5.Vector.dist(fromPos, closest.getCenter());
+
+        objects.slice(1).forEach(o => {
+            const distanceToObj = p5.Vector.dist(fromPos, o.getCenter());
+            if (distanceToObj < distanceToClosest) {
+                closest = o;
+                distanceToClosest = distanceToObj;
+            }
+        });
+
+        return closest;
+    }
+
 }
 
 class Follower extends Mover {
+
+    render() {
+        fill(255);
+        strokeWeight(1);
+        stroke(0);
+        push();
+        translate(this.pos.x, this.pos.y);
+        if (debug) {
+            fill(0, 0, 0, 0);
+            ellipse(0, 0, this.visibilityRadius * 2, this.visibilityRadius * 2);
+            fill(255);
+        }
+        strokeWeight(2);
+        rotate(this.velocity.heading());
+        triangle(-this.r, -this.r / 2, -this.r, this.r / 2, this.r, 0);
+        pop();
+    }
+
 
     followLeader(leader, entities, distance = 25) {
         let tv = leader.velocity.copy();
@@ -347,7 +372,6 @@ class Follower extends Mover {
 class Leader extends Mover {
     constructor(x, y, ms, mf) {
         super(x, y, ms, mf);
-        this.visibilityRadius = 150;
 
         this.initMemory();
         this.initDesires();
@@ -471,22 +495,6 @@ class Leader extends Mover {
         }
     }
 
-    getClosestObject(fromPos, objects) {
-        // search for the closest object containing food
-        let closest = objects[0];
-        let distanceToClosest = p5.Vector.dist(fromPos, closest.getCenter());
-
-        objects.slice(1).forEach(o => {
-            const distanceToObj = p5.Vector.dist(fromPos, o.getCenter());
-            if (distanceToObj < distanceToClosest) {
-                closest = o;
-                distanceToClosest = distanceToObj;
-            }
-        });
-
-        return closest;
-    }
-
     searchObject(type, followers) {
         //todo do not calculate distances and create path on each iteration. Rather do it when making the decision
         if (this.memorizedObjects[type].length === 0) {
@@ -548,9 +556,16 @@ class Predator extends Mover {
     }
 
     applyBehavior(entities) {
-        let w = this.wander();
-        w.mult(3);
-        this.applyForce(w);
+        const closest = this.getClosestObject(this.pos, entities);
+
+        if (p5.Vector.dist(this.pos, closest.getCenter()) <= this.visibilityRadius) {
+            const p = this.pursue(closest);
+            this.applyForce(p);
+        } else {
+            let w = this.wander();
+            w.mult(3);
+            this.applyForce(w);
+        }
     }
 
 }
