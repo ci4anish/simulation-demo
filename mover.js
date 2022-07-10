@@ -12,6 +12,16 @@ class Mover {
         this.maxforce = mf;
         this.acceleration = createVector(0, 0);
         this.velocity = createVector(1, 0);
+
+        this.wanderTheta = PI / 2;
+        this.wanderDistance = 100;
+        this.wanderRadius = 50;
+
+        this.wanderPoint = this.velocity.copy().setMag(this.wanderDistance);
+        this.wanderPoint.add(this.pos);
+
+        this.target = this.wanderPoint.copy();
+        this.target.add(this.wanderRadius, 0);
     }
 
     applyForce(force) {
@@ -254,7 +264,7 @@ class Mover {
         }
         return steering;
     }
-    
+
     align(boids) {
         let perceptionRadius = 25;
         let steering = createVector();
@@ -324,7 +334,7 @@ class Follower extends Mover {
         return (ahead.dist(this.pos) <= leaderSightRadius || leader.pos.dist(this.pos) <= leaderSightRadius)
     }
 
-    applyBehavior(leader, entities){
+    applyBehavior(leader, entities) {
         const fl = this.followLeader(leader, entities);
         const f = this.flock(entities);
 
@@ -337,16 +347,6 @@ class Follower extends Mover {
 class Leader extends Mover {
     constructor(x, y, ms, mf) {
         super(x, y, ms, mf);
-        this.wanderTheta = PI / 2;
-        this.wanderDistance = 100;
-        this.wanderRadius = 50;
-
-        this.wanderPoint = this.velocity.copy().setMag(this.wanderDistance);
-        this.wanderPoint.add(this.pos);
-
-        this.target = this.wanderPoint.copy();
-        this.target.add(this.wanderRadius, 0);
-
         this.visibilityRadius = 150;
 
         this.initMemory();
@@ -354,7 +354,6 @@ class Leader extends Mover {
     }
 
     render() {
-        fill(125);
         strokeWeight(2);
         stroke(0);
         push();
@@ -522,6 +521,36 @@ class Leader extends Mover {
 
         let l = this.lead(followers);
         this.applyForce(l);
+    }
+
+}
+
+class Predator extends Mover {
+    constructor(x, y, ms, mf) {
+        super(x, y, ms, mf);
+        this.visibilityRadius = 200;
+        this.velocity = p5.Vector.random2D();
+    }
+
+    render() {
+        strokeWeight(2);
+        stroke(0);
+        push();
+        translate(this.pos.x, this.pos.y);
+        if (debug) {
+            fill(0, 0, 0, 0);
+            ellipse(0, 0, this.visibilityRadius * 2, this.visibilityRadius * 2);
+        }
+        rotate(this.velocity.heading());
+        fill(200, 30, 30);
+        triangle(-this.r, -this.r / 2, -this.r, this.r / 2, this.r, 0);
+        pop();
+    }
+
+    applyBehavior(entities) {
+        let w = this.wander();
+        w.mult(3);
+        this.applyForce(w);
     }
 
 }

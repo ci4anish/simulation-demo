@@ -1,5 +1,5 @@
 let debug = true;
-let lake, field, leader, camp;
+let lake, field, leader, camp, predators = [];
 let followers = [];
 
 function setup() {
@@ -27,12 +27,19 @@ function draw() {
     field.display();
     camp.display();
     leader.applyBehavior(followers);
-    leader.contain(window.innerWidth, window.innerHeight)
+    leader.contain(window.innerWidth, window.innerHeight);
     leader.run();
 
     followers.forEach((f) => {
         f.applyBehavior(leader, followers);
+        f.contain(window.innerWidth, window.innerHeight);
         f.run();
+    });
+
+    predators.forEach(predator => {
+        predator.applyBehavior(followers);
+        predator.contain(window.innerWidth, window.innerHeight);
+        predator.run();
     });
 }
 
@@ -40,4 +47,9 @@ function keyPressed() {
     if (key == "d") {
         debug = !debug;
     }
+}
+
+function mousePressed() {
+    predators.push(new Predator(mouseX, mouseY, 1.3, 0.04));
+
 }
