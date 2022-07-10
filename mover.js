@@ -6,6 +6,7 @@ const ObjectTypes = {
 
 class Mover {
     constructor(x, y, ms, mf) {
+        this.alive = true;
         this.pos = createVector(x, y);
         this.r = 12;
         this.maxspeed = ms;
@@ -24,6 +25,10 @@ class Mover {
         this.target.add(this.wanderRadius, 0);
 
         this.visibilityRadius = 150;
+    }
+
+    kill() {
+        this.alive = false;
     }
 
     getCenter() {
@@ -317,7 +322,7 @@ class Follower extends Mover {
         stroke(0);
         push();
         translate(this.pos.x, this.pos.y);
-        if (debug) {
+        if (this.alive && debug) {
             fill(0, 0, 0, 0);
             ellipse(0, 0, this.visibilityRadius * 2, this.visibilityRadius * 2);
             fill(255);
@@ -359,7 +364,17 @@ class Follower extends Mover {
         return (ahead.dist(this.pos) <= leaderSightRadius || leader.pos.dist(this.pos) <= leaderSightRadius)
     }
 
-    applyBehavior(leader, entities) {
+    applyBehavior(leader, entities, predators) {
+
+        if (predators.length > 0) {
+            const closest = this.getClosestObject(this.pos, predators);
+            if (p5.Vector.dist(this.pos, closest.getCenter()) <= this.visibilityRadius) {
+                const f = this.flee(closest.pos);
+                this.applyForce(f);
+                return;
+            }
+        }
+
         const fl = this.followLeader(leader, entities);
         const f = this.flock(entities);
 
@@ -385,14 +400,24 @@ class Leader extends Mover {
         if (debug) {
             fill(0, 0, 0, 0);
             ellipse(0, 0, this.visibilityRadius * 2, this.visibilityRadius * 2);
-            fill(125);
         }
+        fill(125);
         rotate(this.velocity.heading());
         triangle(-this.r, -this.r / 2, -this.r, this.r / 2, this.r, 0);
         pop();
     }
 
-    applyBehavior(followers) {
+    applyBehavior(followers, predators) {
+
+        if (predators.length > 0) {
+            const closest = this.getClosestObject(this.pos, predators);
+            if (p5.Vector.dist(this.pos, closest.getCenter()) <= this.visibilityRadius) {
+                const f = this.flee(closest.pos);
+                this.applyForce(f);
+                return;
+            }
+        }
+
         if (this.thirst > 0) {
             const closest = this.getClosestObject(this.pos, this.memorizedObjects[ObjectTypes.WATER]);
             if (this.isVisible(closest)) {
@@ -538,6 +563,7 @@ class Predator extends Mover {
         super(x, y, ms, mf);
         this.visibilityRadius = 200;
         this.velocity = p5.Vector.random2D();
+        this.hungre = 80;
     }
 
     render() {
@@ -555,11 +581,41 @@ class Predator extends Mover {
         pop();
     }
 
-    applyBehavior(entities) {
-        const closest = this.getClosestObject(this.pos, entities);
+    feed() {
+        if (this.hungre > 0) {
+            this.hungre -= 0.1;
+        }
+    }
 
-        if (p5.Vector.dist(this.pos, closest.getCenter()) <= this.visibilityRadius) {
-            const p = this.pursue(closest);
+    applyBehavior(entities) {
+        if (this.hungre < 20) {
+            let w = this.wander();
+            w.mult(3);
+            this.applyForce(w);
+            return;
+        }
+
+        const deadEntities = entities.filter(e => !e.alive);
+        const aliveEntities = entities.filter(e => e.alive);
+
+        let closestDead, closestAlive;
+
+        if (deadEntities.length > 0) {
+            closestDead = this.getClosestObject(this.pos, deadEntities);
+        }
+
+        if (aliveEntities.length > 0) {
+            closestAlive = this.getClosestObject(this.pos, aliveEntities);
+        }
+
+        if (closestDead) {
+            this.feed();
+            let a = this.arrive(closestDead.pos);
+            this.applyForce(a);
+        } else if (p5.Vector.dist(this.pos, closestAlive.getCenter()) <= this.r) {
+            closestAlive.kill();
+        } else if (p5.Vector.dist(this.pos, closestAlive.getCenter()) <= this.visibilityRadius) {
+            const p = this.pursue(closestAlive);
             this.applyForce(p);
         } else {
             let w = this.wander();

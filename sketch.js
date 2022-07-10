@@ -7,7 +7,7 @@ function setup() {
     lake = new Lake();
     camp = new Camp();
     field = new Field();
-    leader = new Leader(camp.getCenter().x, camp.getCenter().y, 1, 0.02);
+    leader = new Leader(camp.getCenter().x, camp.getCenter().y, 1.5, 0.03);
 
     leader.rememberObject(camp, ObjectTypes.CAMP);
     leader.rememberObject(field, ObjectTypes.FOOD);
@@ -26,14 +26,18 @@ function draw() {
     lake.display();
     field.display();
     camp.display();
-    leader.applyBehavior(followers);
+    leader.applyBehavior(followers.filter(f => f.alive), predators);
     leader.contain(window.innerWidth, window.innerHeight);
     leader.run();
 
     followers.forEach((f) => {
-        f.applyBehavior(leader, followers);
-        f.contain(window.innerWidth, window.innerHeight);
-        f.run();
+        if(f.alive) {
+            f.applyBehavior(leader, followers.filter(f => f.alive), predators);
+            f.contain(window.innerWidth, window.innerHeight);
+            f.run();
+        } else {
+            f.render();
+        }
     });
 
     predators.forEach(predator => {
@@ -50,6 +54,6 @@ function keyPressed() {
 }
 
 function mousePressed() {
-    predators.push(new Predator(mouseX, mouseY, 1.3, 0.04));
+    predators.push(new Predator(mouseX, mouseY, 1.3, 0.2));
 
 }
