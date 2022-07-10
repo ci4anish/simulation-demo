@@ -36,6 +36,11 @@ class Mover {
         }
     }
 
+    isVisible(other) {
+        let d = p5.Vector.dist(this.pos, other.pos);
+        return (d < this.visibilityRadius + other.radius);
+    }
+
     searchObject(type) {
         //todo do not calculate distances and create path on each iteration. Rather do it when making the decision
         if (this.memorizedObjects[type].length === 0) {
@@ -521,16 +526,11 @@ class Leader extends Mover {
         }
     }
 
-    isVisible(other) {
-        let d = p5.Vector.dist(this.pos, other.pos);
-        return (d < this.visibilityRadius + other.radius);
-    }
-
     lead(entities) {
         for (let i = 0; i < entities.length; i++) {
             let d = p5.Vector.dist(this.pos, entities[i].pos);
             if (d > this.visibilityRadius) {
-                return this.acceleration.copy().setMag(-this.maxforce / 2);
+                return this.velocity.copy().mult(-1).setMag(this.maxforce / 2);
             }
         }
 
@@ -596,10 +596,17 @@ class Predator extends Mover {
     applyBehavior(entities) {
         if (this.hungre < 20) {
             if (!this.currentNavigationObject) {
-                this.setCurrentNavigationObject(new NavigationObject(this.pos));
+                this.setCurrentNavigationObject(new NavigationObject(this.pos.copy()));
             }
-            let s = this.searchObject(ObjectTypes.CAMP);
-            this.applyForce(s);
+
+            const target = this.getClosestObject(this.pos, this.memorizedObjects[ObjectTypes.CAMP]);
+            if (this.isVisible(target)) {
+                const steer = this.arrive(target.pos);
+                this.applyForce(steer);
+            } else {
+                let s = this.searchObject(ObjectTypes.CAMP);
+                this.applyForce(s);
+            }
             return;
         }
 

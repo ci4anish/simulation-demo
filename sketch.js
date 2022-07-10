@@ -3,11 +3,17 @@ let lake, field, leader, camp, predatorCamp, predators = [];
 let followers = [];
 
 function setup() {
+    const firstQuadrant = createVector(random(0, window.innerWidth / 2), random(0, window.innerHeight / 2));
+    const secondQuadrant = createVector(random(0, window.innerWidth / 2), random(window.innerHeight / 2, window.innerHeight));
+    const thirdQuadrant = createVector(random(window.innerWidth / 2, window.innerWidth), random(0, window.innerHeight / 2));
+    const forthQuadrant = createVector(random(window.innerWidth / 2, window.innerWidth), random(window.innerHeight / 2, window.innerHeight));
+
+
     createCanvas(window.innerWidth, window.innerHeight);
-    lake = new Lake(createVector(900, 500));
-    camp = new Camp(createVector(100, 100));
-    predatorCamp = new Camp(createVector(window.innerWidth - 100, window.innerHeight - 100));
-    field = new Field(createVector(240, 660));
+    lake = new Lake(thirdQuadrant);
+    camp = new Camp(firstQuadrant);
+    predatorCamp = new PredatorCamp(secondQuadrant);
+    field = new Field(forthQuadrant);
     leader = new Leader(camp.getCenter().x, camp.getCenter().y, 1.5, 0.03);
 
     leader.rememberObject(camp, ObjectTypes.CAMP);
